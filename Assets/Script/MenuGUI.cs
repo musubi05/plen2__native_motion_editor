@@ -21,6 +21,10 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 	/// </summary>
 	public InputField inputFieldSlot;
 	/// <summary>
+	/// Logoの目（インスペクタで初期化）
+	/// </summary>
+	public GameObject logoEyes;
+	/// <summary>
 	///  画面無効化用画像（uiDisabledMaskingObjectより）
 	/// </summary>
 	private Image uiDisabledMaskImg;
@@ -180,6 +184,7 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 	public void BtnStop_Click() {
 		// アニメーション停止
 		objects.plenAnimation.AnimationStop ();
+		objects.TxtPopUpActive ("aaaaaaa", 2.0f);
 	}
 	public void BtnBackFrame_Click() {
 		// ひとつ前のフレームを選択
@@ -190,7 +195,7 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 		// ひとつ次のフレームを選択
 		objects.panelFrames.FrameGoNext ();
 	}
-	public void BtnInstall_Click() {
+/*	public void BtnInstall_Click() {
 		// モーションインストールを行う
 		string fileName = "fromMotionEditor";
 		string jsonPath = ObjectsController.tmpFilePath + "/" + fileName + ".json";
@@ -203,8 +208,58 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 		}
 		// 保存したJSONファイルをもとにモーションインストーラを起動．
 		objects.motionInstall.StartMotionInstallApp (@jsonPath,  @fileName);
+	}*/
+	public void BtnInstall_Click() {
+		// モーションインストールを行う
+		string fileName = "fromMotionEditor";
+		// JSONファイル作成．保存．
+		string jsonStr = objects.motionData.MotionJSONDataCreate (fileName);
+
+
+
+		// PLEN Connect
+		objects.plenConnect.Connect ((isSuccess, message, response) => {
+			if(response != null && (bool)response["result"] == true) {
+				objects.TxtPopUpActive("** Installing this motion... **", 3f);
+				// Motion Install
+				objects.plenConnect.Install(jsonStr, (isSuccessIns, msgIns, resIns) => {
+					if(resIns != null && (bool)resIns["result"] == true) {
+						objects.TxtPopUpActive("** Install Successful **", 3f);
+					} else {
+						objects.TxtPopUpActive("** Install Failure ** ", 3f);
+					}
+					objects.plenConnect.Disconnect((isSuccessDis, msgDis, resDis) => {
+						if(isSuccessDis == true && resDis != null && (bool)resDis["result"] == true) {
+						} else {
+							objects.TxtPopUpActive("** Disconnect Failure **", 3f);
+							objects.TxtPopUpActive(msgDis, 3f);
+						}
+					});
+				});
+			} else {
+				objects.TxtPopUpActive("** Connect Failure ** ", 3f);
+			}
+		});
+
 	}
 	public void BtnSync_Click() {
+		if (objects.isPlenConnecting == false) {
+			objects.plenConnect.Connect ((isSuccess, message, response) => {
+				if(response != null && (bool)response["result"] == true) {
+					objects.TxtPopUpActive("** Connect Successful ** ", 3f);
+				} else {
+					objects.TxtPopUpActive("** Connect Failure ** ", 3f);
+				}
+			});
+		} else {
+			objects.plenConnect.Disconnect ((isSuccess, message, response) => {
+				if(response != null && (bool)response["result"]== true) {
+					objects.TxtPopUpActive("** Disconnect Successful ** ", 3f);
+				} else {
+					objects.TxtPopUpActive("** Disconnect Failure ** ", 3f);
+				}
+			});
+		}
 	}
 	public void BtnMirror_Click() {
 		objects.motionData.ModelTurnOver ();
@@ -226,6 +281,9 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 	}
 	public void BtnSample3_Click() {
 		SampleMotionRead (3);
+	}
+	public void Logo_Click() {
+	
 	}
 	/// <summary>
 	/// サンプルモーション読み込みメソッド
@@ -277,7 +335,5 @@ public class MenuGUI : MonoBehaviour {	/// <summary>
 			inputFieldSlot.text = value.ToString();
 			objects.motionData.slotNum = value;
 		}
-
 	}
-
 }

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class ObjectsController : MonoBehaviour {
@@ -23,6 +24,10 @@ public class ObjectsController : MonoBehaviour {
 	/// </summary>
 	public FileChooser fileChooser;
 	/// <summary>
+	/// PLEN Control Server接続
+	/// </summary>
+	public PlenConnect plenConnect;
+	/// <summary>
 	///  モーションインストーラ
 	/// </summary>
 	public MotionInstall motionInstall;
@@ -38,6 +43,10 @@ public class ObjectsController : MonoBehaviour {
 	///  キャンバスのRectTransform．ディスプレイにはこのキャンバス領域が表示される．
 	/// </summary>
 	public RectTransform dispCanvasRectTransform;
+	/// <summary>
+	/// ポップアップテキストボックス
+	/// </summary>
+	public InputField txtBoxPopUp;
 	/// <summary>
 	/// アニメーション再生フラグ
 	/// </summary>
@@ -83,6 +92,10 @@ public class ObjectsController : MonoBehaviour {
 			_isFrameRelationWaitRequest = value;
 		}
 	}
+	public bool isPlenConnecting {
+		get;
+		set;
+	}
 	/// <summary>
 	///  一時ファイル保存先（読み取り専用）
 	/// </summary>
@@ -104,6 +117,8 @@ public class ObjectsController : MonoBehaviour {
 	private bool _isAllObjectWaitRequest;
 	private bool _isDialogShowing;
 
+	private Coroutine _runningCoroutime;
+
 	void Awake() {
 		if (Application.platform == RuntimePlatform.WindowsPlayer) {
 			_tmpFilePath = Application.dataPath + "/../tmp/";
@@ -124,12 +139,47 @@ public class ObjectsController : MonoBehaviour {
 	void Start () {
 		motionInstall = this.GetComponent<MotionInstall> ();
 
-
-
 	}
 	
 	// Update is called once per frame
 	void Update () {
 	
+	}
+
+	public void TxtPopUpActive(string str, float displayTimeSeconds) {
+		if (_runningCoroutime != null) {
+			StopCoroutine (_runningCoroutime);
+		}
+		_runningCoroutime = StartCoroutine (PopUpDisplay (str, displayTimeSeconds));
+	}
+
+	IEnumerator PopUpDisplay(string str, float time) {
+		RectTransform rectTransPopUp = txtBoxPopUp.gameObject.GetComponent<RectTransform> ();
+		const float MOVE_DELTA = 30;
+		const float MOVING_TIME = 1;
+		float delta = rectTransPopUp.rect.height  / (MOVING_TIME * MOVE_DELTA);
+
+		txtBoxPopUp.gameObject.SetActive (true);
+		txtBoxPopUp.text = str;
+		rectTransPopUp.anchoredPosition = new Vector2 (0, rectTransPopUp.rect.height / 2);
+
+		// fade-in
+		for (int i = 0; i < MOVE_DELTA; i++) {
+			rectTransPopUp.anchoredPosition += new Vector2 (0, -delta);
+			yield return new WaitForSeconds (1 / MOVE_DELTA);
+
+		}
+		// wait
+		yield return new WaitForSeconds(time);
+
+
+		// fade-out
+		for (int i = 0; i <MOVE_DELTA; i++) {
+			rectTransPopUp.anchoredPosition += new Vector2 (0, delta);
+			yield return new WaitForSeconds (1 / MOVE_DELTA);
+		}
+		txtBoxPopUp.gameObject.SetActive (false);
+	
+		_runningCoroutime = null;
 	}
 }
